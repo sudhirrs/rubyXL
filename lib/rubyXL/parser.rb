@@ -83,8 +83,14 @@ module RubyXL
       #1. find the dimensions of the data matrix
       #2. Fill in the matrix with data from worksheet/shared_string files
       #3. Apply styles
+
+      sheets = files['workbook'].css('sheet')
+      sheet_names = Array.new(sheets.length)
+      files['workbook'].css('sheet').each do |sheet|
+        sheet_names[sheet.attribute('sheetId') - 1] = sheet.attribute('name').to_s
+      end
       wb.worksheets.each_index do |i|
-        Parser.fill_worksheet(wb,i,files,wb.shared_strings)
+        Parser.fill_worksheet(wb,i,files,wb.shared_strings, sheet_names)
       end
 
       return wb
@@ -163,8 +169,8 @@ module RubyXL
     # i is the sheet number
     # files is the hash which includes information for each worksheet
     # shared_strings has group of indexed strings which the cells reference
-    def Parser.fill_worksheet(wb,i,files,shared_strings)
-      wb.worksheets[i] = Parser.create_matrix(wb, i, files)
+    def Parser.fill_worksheet(wb,i,files,shared_strings, sheet_names)
+      wb.worksheets[i] = Parser.create_matrix(wb, i, files, sheet_names)
       j = i+1
 
       namespaces = files[j].root.namespaces()
@@ -433,8 +439,7 @@ module RubyXL
     end
 
     #sheet_names, dimensions
-    def Parser.create_matrix(wb,i, files)
-      sheet_names = files['app'].css('TitlesOfParts vt|vector vt|lpstr').children
+    def Parser.create_matrix(wb,i, files, sheet_names)
       sheet = Worksheet.new(wb,sheet_names[i].to_s,[])
 
       dimensions = files[i+1].css('dimension').attribute('ref').to_s
